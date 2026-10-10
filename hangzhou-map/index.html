@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><link rel="icon" href="/favicon.svg">
+<script>(()=>{
+ const manifest={"/game/character-reference.png":{"parts":["/deployment-assets/asset-000.js","/deployment-assets/asset-001.js"],"type":"image/png"},"/game/hangzhou-qianjiang-night-panorama.png":{"parts":["/deployment-assets/asset-002.js","/deployment-assets/asset-003.js"],"type":"image/png"},"/game/knowledge-sandbox-compact.json":{"parts":["/deployment-assets/asset-004.js","/deployment-assets/asset-005.js"],"type":"application/json"},"/game/knowledge-sandbox-part-0.bin":{"parts":["/deployment-assets/asset-006.js","/deployment-assets/asset-007.js"],"type":"application/octet-stream"},"/game/knowledge-sandbox-part-1.bin":{"parts":["/deployment-assets/asset-008.js","/deployment-assets/asset-009.js"],"type":"application/octet-stream"},"/game/knowledge-sandbox-part-2.bin":{"parts":["/deployment-assets/asset-010.js","/deployment-assets/asset-011.js"],"type":"application/octet-stream"},"/game/knowledge-sandbox-part-3.bin":{"parts":["/deployment-assets/asset-012.js"],"type":"application/octet-stream"},"/hangzhou-map/hangzhou-districts.geojson":{"parts":["/deployment-assets/asset-013.js"],"type":"application/json"},"/hangzhou-map/preview-growth.png":{"parts":["/deployment-assets/asset-014.js"],"type":"image/png"},"/hangzhou-map/preview-mitigation.png":{"parts":["/deployment-assets/asset-015.js"],"type":"image/png"},"/hangzhou-map/preview-rain.png":{"parts":["/deployment-assets/asset-016.js"],"type":"image/png"},"/regions/assets/china-provinces.json":{"parts":["/deployment-assets/asset-017.js"],"type":"application/json"},"/regions/assets/world-countries.json":{"parts":["/deployment-assets/asset-018.js"],"type":"application/json"}},pending=new Map(),parts=new Map(),images=new Map();
+ window.__RAIN_REGISTER=(name,index,data)=>{if(!parts.has(name))parts.set(name,[]);parts.get(name)[index]=data;};
+ function lookup(input){try{const url=new URL(typeof input==='string'?input:input.url,location.href);return url.origin===location.origin&&manifest[url.pathname]?url.pathname:null;}catch{return null;}}
+ function load(name){if(pending.has(name))return pending.get(name);const item=manifest[name];const task=Promise.all(item.parts.map(src=>new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=()=>{script.remove();resolve();};script.onerror=()=>{script.remove();reject(Error('资源脚本加载失败：'+src));};document.head.append(script);}))).then(()=>{const stored=parts.get(name);if(!stored||stored.length!==item.parts.length||stored.some(x=>!x))throw Error('资源分片缺失：'+name);const decoded=stored.map(value=>{const raw=atob(value),bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);return bytes;});parts.delete(name);return new Blob(decoded,{type:item.type});});pending.set(name,task);task.catch(()=>pending.delete(name));return task;}
+ const nativeFetch=window.fetch.bind(window);window.fetch=(input,init)=>{const name=lookup(input);return name?load(name).then(blob=>new Response(blob,{status:200,headers:{'Content-Type':blob.type}})):nativeFetch(input,init);};
+ const descriptor=Object.getOwnPropertyDescriptor(HTMLImageElement.prototype,'src'),nativeAttribute=HTMLImageElement.prototype.setAttribute;
+ function setImage(image,value,setter){if(typeof value==='string'&&value.startsWith('data:image/')){if(!images.has(value)){const comma=value.indexOf(','),header=value.slice(5,comma),raw=/;base64/i.test(header)?atob(value.slice(comma+1)):decodeURIComponent(value.slice(comma+1)),bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);images.set(value,URL.createObjectURL(new Blob([bytes],{type:header.split(';')[0]})));}setter(images.get(value));return;}const name=lookup(String(value));if(!name){setter(value);return;}image.__rainSource=value;load(name).then(blob=>{if(image.__rainSource!==value)return;if(!images.has(name))images.set(name,URL.createObjectURL(blob));setter(images.get(name));}).catch(error=>{console.error(error);image.dispatchEvent(new Event('error'));});}
+ Object.defineProperty(HTMLImageElement.prototype,'src',{configurable:true,enumerable:descriptor.enumerable,get:descriptor.get,set(value){setImage(this,value,src=>descriptor.set.call(this,src));}});
+ HTMLImageElement.prototype.setAttribute=function(name,value){if(name.toLowerCase()==='src')setImage(this,value,src=>nativeAttribute.call(this,name,src));else nativeAttribute.call(this,name,value);};
+})();</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f3f7f5">
+  <title>杭州 · 城市区域底图</title>
+  <style>
+    :root{color-scheme:light;--paper:#f3f7f5;--ink:#27444b;--muted:#6c8589;--water:#c9e5eb;--line:#718d92;--focus:#507d85}
+    *{box-sizing:border-box}
+    html,body{width:100%;min-height:100%;margin:0}
+    body{min-height:100svh;overflow-x:hidden;color:var(--ink);font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;background:radial-gradient(ellipse at 52% 44%,rgba(187,222,225,.23),transparent 50%),linear-gradient(145deg,#f8faf8,#edf4f2 72%,#f4f7f5)}
+    .page{width:min(1320px,100%);min-height:100svh;margin:auto;padding:26px clamp(18px,4vw,60px) 20px;display:flex;flex-direction:column}
+    .page-head{display:flex;align-items:center;justify-content:space-between;gap:20px;flex:none}
+    .back{color:#668187;text-decoration:none;font-size:13px;letter-spacing:.04em}.back:hover{color:#315e66}
+    .heading{text-align:center;flex:1}.eyebrow{margin:0 0 6px;color:#789296;font:600 10px/1.2 ui-monospace,monospace;letter-spacing:.2em}.heading h1{margin:0;color:#2f5158;font-size:clamp(22px,2.5vw,32px);font-weight:500;letter-spacing:.14em}.heading p{margin:7px 0 0;color:#7d9294;font-size:12px;letter-spacing:.06em}
+    .spacer{width:115px;flex:none}
+    .map-stage{position:relative;flex:1;min-height:500px;display:grid;place-items:center;perspective:1450px;isolation:isolate}
+    .map-stage:before{content:"";position:absolute;width:min(70vw,760px);height:70px;left:50%;bottom:14%;transform:translateX(-50%);border-radius:50%;background:rgba(76,119,126,.09);filter:blur(22px);z-index:-1}
+    #hangzhouMap{display:block;width:min(88%,1080px);height:min(76svh,740px);overflow:visible;transform:perspective(1450px) rotateX(30deg) rotateZ(-7deg) scale(.94);transform-origin:50% 52%;filter:drop-shadow(0 16px 14px rgba(69,105,111,.1));transition:transform .5s ease}
+    .district{fill:var(--water);stroke:rgba(248,252,251,.94);stroke-width:1.3;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+    .district.is-focus{stroke:rgba(248,252,251,.94);stroke-width:1.3}
+    .district-label{fill:#345a62;font-size:13px;font-weight:600;text-anchor:middle;dominant-baseline:middle;paint-order:stroke;stroke:rgba(245,249,247,.97);stroke-width:4px;stroke-linejoin:round;letter-spacing:.08em;pointer-events:none}
+    .region-pin{fill:#47747d;stroke:#eef6f4;stroke-width:2;vector-effect:non-scaling-stroke}
+    .map-status{position:absolute;left:50%;bottom:5%;transform:translateX(-50%);color:#829699;font-size:11px;letter-spacing:.08em;white-space:nowrap}
+    .page-foot{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:12px;border-top:1px solid rgba(100,137,143,.18);color:#809396;font-size:10px;line-height:1.6}
+    .page-foot a{color:#66868a;text-decoration:underline;text-decoration-color:rgba(102,134,138,.35);text-underline-offset:3px}
+    .error{display:none}
+    @media(max-width:700px){.page{padding:18px 14px 14px}.page-head{align-items:flex-start}.heading{padding:0 6px}.heading h1{font-size:21px}.heading p{font-size:10px;line-height:1.6}.eyebrow{font-size:8px}.back{font-size:11px}.spacer{width:58px}.map-stage{min-height:460px}#hangzhouMap{width:116%;height:min(66svh,600px);transform:perspective(1100px) rotateX(31deg) rotateZ(-7deg) scale(.92)}.district-label{font-size:11px}.map-status{bottom:3%;font-size:9px}.page-foot{align-items:flex-start;flex-direction:column;gap:4px;font-size:9px}}
+    @media(prefers-reduced-motion:reduce){#hangzhouMap{transition:none}}
+    html,body{width:100%;height:100%;min-height:100%;overflow:hidden}
+    body{min-height:100%;background:#05080a;cursor:none}
+    .page{width:100%;height:100%;min-height:100%;padding:0;display:block}
+    .page-head,.map-status,.page-foot{display:none}
+    .map-stage{width:100%;height:100%;min-height:100%;perspective:1450px}
+    .map-stage:before{display:none}
+    #hangzhouMap{width:100%;height:100%;transform:perspective(1450px) rotateX(30deg) rotateZ(-7deg) scale(.94);filter:none;cursor:none;pointer-events:none}
+    @media(max-width:700px){.map-stage{min-height:100%}#hangzhouMap{width:112%;height:100%;transform:perspective(1100px) rotateX(31deg) rotateZ(-7deg) scale(.92)}}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="map-stage" aria-label="杭州市行政区地图">
+      <svg id="hangzhouMap" viewBox="0 0 1000 660" role="img" aria-labelledby="mapTitle mapDescription" preserveAspectRatio="xMidYMid meet">
+        <title id="mapTitle">杭州市行政区地图</title>
+        <desc id="mapDescription">杭州市浅蓝色行政区边界底图，不含区名标注或数据图层。</desc>
+        <g id="districtLayer"></g>
+      </svg>
+    </section>
+  </main>
+  <script>
+    (()=>{
+      const focusNames=new Set(['上城区','西湖区','余杭区','拱墅区']);
+      const districtLayer=document.getElementById('districtLayer');
+      const allPoints=[];
+      const walkCoordinates=(coordinates,visit)=>{if(typeof coordinates[0]==='number'){visit(coordinates);return;}coordinates.forEach(child=>walkCoordinates(child,visit));};
+      const projector=(coord,bounds,scale,offsetX,offsetY,cosLat)=>[offsetX+(coord[0]*cosLat-bounds.minX)*scale,offsetY+(bounds.maxY-coord[1])*scale];
+      const ringsToPath=(geometry,point)=>{
+        const polygons=geometry.type==='Polygon'?[geometry.coordinates]:geometry.coordinates;
+        return polygons.flatMap(polygon=>polygon.map(ring=>ring.map((coord,index)=>{
+          const [x,y]=point(coord);return `${index?'L':'M'}${x.toFixed(2)} ${y.toFixed(2)}`;
+        }).join(' ')+' Z')).join(' ');
+      };
+      const ns='http://www.w3.org/2000/svg';
+      const pathFor=(feature,bounds,scale,offsetX,offsetY,cosLat)=>{
+        const path=document.createElementNS(ns,'path');path.setAttribute('d',ringsToPath(feature.geometry,coord=>projector(coord,bounds,scale,offsetX,offsetY,cosLat)));path.setAttribute('class','district'+(focusNames.has(feature.properties.name)?' is-focus':''));path.setAttribute('fill-rule','evenodd');path.setAttribute('aria-label',feature.properties.name);return path;
+      };
+      fetch('./hangzhou-districts.geojson').then(response=>{if(!response.ok)throw Error('map data');return response.json();}).then(data=>{
+        data.features.forEach(feature=>walkCoordinates(feature.geometry.coordinates,coord=>allPoints.push(coord)));
+        const cosLat=Math.cos(30.2*Math.PI/180),xs=allPoints.map(coord=>coord[0]*cosLat),ys=allPoints.map(coord=>coord[1]);
+        const bounds={minX:Math.min(...xs),maxX:Math.max(...xs),minY:Math.min(...ys),maxY:Math.max(...ys)};
+        const scale=Math.min(850/(bounds.maxX-bounds.minX),570/(bounds.maxY-bounds.minY));
+        const offsetX=(1000-(bounds.maxX-bounds.minX)*scale)/2,offsetY=(660-(bounds.maxY-bounds.minY)*scale)/2;
+        const point=coord=>projector(coord,bounds,scale,offsetX,offsetY,cosLat);
+        data.features.forEach(feature=>districtLayer.append(pathFor(feature,bounds,scale,offsetX,offsetY,cosLat)));
+      }).catch(()=>{});
+    })();
+  </script>
+<script>document.querySelectorAll("img[data-deploy-src]").forEach(function(image){image.src=image.dataset.deploySrc;});</script>
+</body>
+</html>

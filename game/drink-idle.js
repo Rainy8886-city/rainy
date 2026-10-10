@@ -1,0 +1,40 @@
+(()=>{const T=THREE,clamp=T.MathUtils.clamp,smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t);},mix=(a,b,t)=>new T.Vector3(...a).lerp(new T.Vector3(...b),smooth(t));
+window.ResearchDrinkIdle=class{
+ constructor(actor){this.actor=actor;this.idle=0;this.next=5;this.time=null;this.count=0;const visual=actor.visual;
+  this.cup=new T.Group();this.cup.name='PocketThermos';const body=new T.Mesh(new T.CylinderGeometry(.085,.09,.3,32),new T.MeshStandardMaterial({color:0x8aa9a5,roughness:.32,metalness:.25}));this.cup.add(body);const rim=new T.Mesh(new T.TorusGeometry(.072,.012,8,32),new T.MeshStandardMaterial({color:0xd7ddd6,metalness:.35,roughness:.25}));rim.rotation.x=Math.PI/2;rim.position.y=.15;this.cup.add(rim);visual.add(this.cup);
+  this.cup.children[0].geometry.dispose();this.cup.children[0].geometry=new T.CylinderGeometry(.075,.075,.28,32);this.cup.children[1].geometry.dispose();this.cup.children[1].geometry=new T.TorusGeometry(.069,.006,8,32);this.cup.children[1].position.y=.14;
+  // A small rear handle keeps the palm away from the cup wall and rim.
+  this.grip=new T.Vector3(.11,-.10,-.19);const handle=new T.Mesh(new T.TorusGeometry(.08,.012,10,32),body.material);handle.rotation.y=Math.PI/2;handle.position.set(.06,-.05,-.13);this.cup.add(handle);
+  this.rimAnchor=new T.Vector3(0,.14,-.075);
+  this.cap=new T.Group();this.cap.name='ThermosTwistCap';const lid=new T.Mesh(new T.CylinderGeometry(.081,.081,.045,32),new T.MeshStandardMaterial({color:0xc4d2c7,roughness:.5}));this.cap.add(lid);visual.add(this.cap);this.cup.visible=this.cap.visible=false;
+  const canvas=document.createElement('canvas');canvas.width=192;canvas.height=192;const c=canvas.getContext('2d');
+  // Keep the cloud outline; omit only the two trailing strokes.
+  c.strokeStyle='#e5eeea';c.fillStyle='rgba(210,227,220,.16)';c.lineWidth=6;c.lineCap=c.lineJoin='round';c.beginPath();c.moveTo(40,58);c.bezierCurveTo(14,35,35,11,58,25);c.bezierCurveTo(73,0,116,9,119,35);c.bezierCurveTo(154,27,170,66,146,83);c.bezierCurveTo(164,112,134,137,111,119);c.bezierCurveTo(91,148,57,136,58,117);c.bezierCurveTo(22,125,7,87,33,74);c.quadraticCurveTo(23,67,40,58);c.closePath();c.fill();c.stroke();
+  this.steamTexture=new T.CanvasTexture(canvas);this.steamTexture.colorSpace=T.SRGBColorSpace;this.steam=new T.Sprite(new T.SpriteMaterial({map:this.steamTexture,transparent:true,depthWrite:false,opacity:0}));this.steam.name='WarmBreath';this.steam.scale.set(.35,.35,1);visual.add(this.steam);
+  const mouthCanvas=document.createElement('canvas');mouthCanvas.width=128;mouthCanvas.height=80;const m=mouthCanvas.getContext('2d');m.strokeStyle='#996b73';m.lineWidth=24;m.lineCap='round';m.beginPath();m.moveTo(25,26);m.bezierCurveTo(19,60,53,64,64,37);m.bezierCurveTo(75,64,109,60,103,26);m.stroke();this.mouthTexture=new T.CanvasTexture(mouthCanvas);this.mouthTexture.colorSpace=T.SRGBColorSpace;this.omega=new T.Mesh(new T.PlaneGeometry(.32,.19,16,12),new T.MeshBasicMaterial({map:this.mouthTexture,transparent:true,depthWrite:false}));const mouthPositions=this.omega.geometry.attributes.position;for(let i=0;i<mouthPositions.count;i++){const x=mouthPositions.getX(i),y=mouthPositions.getY(i)-.45;mouthPositions.setZ(i,.73*Math.sqrt(Math.max(.001,1-(x/.91)**2-((y+.03)/.8)**2))+.018);}this.omega.position.set(0,-.45,0);actor.head.add(this.omega);this.omega.visible=false;
+ }
+ arm(index,target,weight=1){const a=this.actor.arms[index],b=this.actor.elbows[index],origin=a.position.clone(),delta=target.clone().sub(origin),reach=delta.length(),scale=clamp(reach/.435,1,1.36);a.scale.setScalar(scale);const length=.22*scale,d=clamp(reach,.30,length*2-.002),direction=delta.normalize(),bend=new T.Vector3(index===0?-1:1,-.4,-.4);bend.addScaledVector(direction,-bend.dot(direction)).normalize();const endpoint=origin.clone().addScaledVector(direction,d),joint=origin.clone().addScaledVector(direction,d*.5).addScaledVector(bend,Math.sqrt(Math.max(0,length*length-d*d*.25)));const upper=new T.Quaternion().setFromUnitVectors(new T.Vector3(0,-1,0),joint.clone().sub(origin).normalize());a.quaternion.slerp(upper,weight);const lower=endpoint.sub(joint).normalize().applyQuaternion(a.quaternion.clone().invert());b.quaternion.slerp(new T.Quaternion().setFromUnitVectors(new T.Vector3(0,-1,0),lower),weight);}
+ reset(){this.time=null;this.idle=0;this.next=5;this.hide();}
+ hide(){this.cup.visible=this.cap.visible=false;this.steam.material.opacity=0;this.omega.visible=false;this.actor.root.userData.drinkMouth?.(false);this.actor.expression(false);this.actor.head.rotation.set(0,0,0);this.actor.head.position.y=1.9;this.actor.arms.forEach((a,i)=>{a.scale.setScalar(1);a.rotation.set(0,0,(i===0?-1:1)*.4);});this.actor.elbows.forEach(e=>{e.rotation.set(.08,0,0);e.children[0].quaternion.identity();});}
+ update(dt,allowed){if(!allowed){if(this.time!==null)this.hide();this.time=null;this.idle=0;this.next=5;return;}this.idle+=dt;if(this.time===null){if(this.idle<this.next)return;this.time=0;this.count++;}this.time+=dt;const t=this.time,visual=this.actor.visual;
+  const pocket=new T.Vector3(.26,.65,.42),chest=new T.Vector3(0,.96,.55),rest=new T.Vector3(-.42,.55,0);
+  const approach=smooth((t-2.8)/1.1)*(1-smooth((t-5.5)/.9));this.actor.head.rotation.x=.09*approach;this.actor.root.updateMatrixWorld(true);
+  const lip=visual.worldToLocal(this.actor.head.localToWorld(this.actor.head.userData.drinkLip.clone()));
+  const tilt=smooth((t-4.6)/.4)*(1-smooth((t-5.2)/.3));this.cup.rotation.set(-.22*tilt,0,0);
+  const rim=this.rimAnchor.clone().applyEuler(this.cup.rotation),near=lip.clone().add(new T.Vector3(0,-.008,.018+(1-smooth((t-4.2)/.4))*.075)).sub(rim);
+  let center=chest.clone();if(t<.7)center.copy(pocket);else if(t<1.4)center.copy(pocket).lerp(chest,smooth((t-.7)/.7));else if(t>=2.8&&t<6.4)center.lerp(near,approach);else if(t>9.2)center.lerp(pocket,smooth((t-9.2)/.8));
+  const right=center.clone().add(this.grip.clone().applyEuler(this.cup.rotation));const capOn=center.clone().add(new T.Vector3(0,.165,0));const leftGrip=new T.Vector3(-.11,-.02,-.14),hold=new T.Vector3(-.40,.88,.30),capHeld=hold.clone().sub(leftGrip);
+  const removed=smooth((t-2.4)/.4)*(1-smooth((t-8.7)/.5));this.cap.position.copy(capOn).lerp(capHeld,removed);this.cap.rotation.y=t>1.4&&t<2.4?(t-1.4)*Math.PI*4:t>8.4?-t*Math.PI*3:0;
+  const left=rest.clone().lerp(this.cap.position.clone().add(leftGrip),smooth((t-.7)/.7)*(1-smooth((t-9.2)/.8)));
+  this.arm(1,right,smooth(t/.25));this.arm(0,left,smooth(t/.25));this.actor.root.updateMatrixWorld(true);
+  const hand=visual.worldToLocal(this.actor.elbows[1].children[0].getWorldPosition(new T.Vector3()));this.cup.position.copy(hand).sub(this.grip.clone().applyEuler(this.cup.rotation));
+  // Orient the palm relative to the cup; attachment position/angle is fixed.
+  const wrist=this.actor.elbows[1].children[0],worldRotation=visual.getWorldQuaternion(new T.Quaternion()).multiply(this.cup.quaternion);wrist.quaternion.copy(this.actor.elbows[1].getWorldQuaternion(new T.Quaternion()).invert().multiply(worldRotation));
+  this.cup.visible=t>.7&&t<10;this.cap.visible=this.cup.visible;
+  this.phase=t<.7?'reach-pocket':t<1.4?'retrieve':t<2.4?'unscrew':t<3.9?'raise-cup':t<4.6?'blow':t<5.5?'sip':t<6.4?'lower-cup':t<8.4?'happy-breath':t<9.2?'recap':'stow';
+  const happy=t>=5.6&&t<8.7;if(happy)this.actor.root.userData.setHappy();this.omega.visible=happy;this.actor.root.userData.drinkMouth?.(happy);
+  const breath=t>=6.3&&t<7.7?(t-6.3)/1.4:-1;if(breath>=0){this.steam.position.set(.78+breath*.22,1.22-breath*.25,.84);this.steam.scale.setScalar(.45+breath*.15);this.steam.material.opacity=Math.min(1,Math.sin(breath*Math.PI)*1.45);}else this.steam.material.opacity=0;
+  this.actor.root.userData.drinkIdle={phase:this.phase,time:t,count:this.count,lip:lip.toArray(),rim:this.cup.position.clone().add(rim).toArray(),gripError:hand.distanceTo(right)};
+  if(t>=10.2){wrist.quaternion.identity();this.hide();this.time=null;this.next=this.idle+15;this.actor.root.userData.drinkIdle={phase:'waiting',count:this.count};}
+ }
+};})();

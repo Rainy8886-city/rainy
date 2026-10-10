@@ -1,0 +1,32 @@
+.hz-mitigation-page{margin:0;min-height:720px}
+#hangzhouMitigationScene{position:absolute;inset:85px 0 300px;overflow:hidden}
+#hangzhouMitigationScene canvas{width:100%;height:100%;display:block}
+#hangzhouMitigationScene:focus-visible{outline:1px solid #75bcd3;outline-offset:-3px}
+.hz-mitigation-detail{position:absolute;bottom:295px;left:5%;right:5%;text-align:center;color:#9ebbc8;font-size:12px;line-height:1.6}
+.hz-mitigation-projects{position:absolute;top:100px;left:5%;z-index:3;width:min(610px,52%);padding:0 0 0 12px;border-left:1px solid #e0bb75;background:none;color:#b0cbd4;pointer-events:none}
+#hzMitigationProjectList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:20px}
+.hz-mitigation-projects[hidden]{display:none}
+.hz-project-kicker{display:block;color:#e0bb75;font-size:11px;letter-spacing:.06em;margin-bottom:8px}
+.hz-mitigation-projects button{display:block;width:100%;text-align:left;border:0;background:none;padding:5px 0;color:#c4e0e9;font-family:inherit;font-size:12px;line-height:1.5;cursor:pointer;pointer-events:auto}
+.hz-mitigation-projects button:hover,.hz-mitigation-projects button:focus-visible{color:#f1d09c}
+.hz-mitigation-projects button strong{font-weight:500;color:#f0ce92;margin-right:8px}
+.hz-mitigation-projects small{display:block;margin-top:8px;color:#829faa;font-size:10px}
+.hz-mitigation-story{text-align:center;color:#abc7d2;font-size:12px;line-height:1.6;margin:0 0 13px;min-height:20px}
+.hz-mitigation-years .has-project{position:relative}
+.hz-mitigation-years .has-project:after{content:'';position:absolute;width:3px;height:3px;border-radius:50%;background:#e0bb75;left:50%;bottom:-6px}
+.hz-mitigation-detail.selected{color:#d4eaf2;font-size:14px}
+.hz-mitigation-controls{width:min(930px,82%)}
+.hz-mitigation-legends{display:flex;justify-content:center;align-items:center;gap:30px;font-size:12px;margin-bottom:20px}
+.hz-mitigation-legends span{display:flex;align-items:center;gap:9px}
+.hz-mitigation-legends .severity{display:inline-block;width:95px;height:7px;border-radius:5px;background:linear-gradient(90deg,#c9e5eb,#559abb,#06416a,#032c50)}
+.hz-mitigation-legends .needle{display:inline-block;width:7px;height:26px;clip-path:polygon(50% 0,100% 95%,78% 100%,22% 100%,0 95%);background:linear-gradient(90deg,#1361a1,#70bcdc,#154d85)}
+.hz-rain-caption{display:flex;justify-content:space-between;align-items:center;color:#90b6c5;font-size:11px;margin-bottom:8px}
+.hz-rain-caption output{color:#d3edf7;font-size:15px;font-variant-numeric:tabular-nums}
+.hz-rain-track{padding:0 8px}
+#hangzhouMitigationRainChart{width:100%;height:85px;display:block;overflow:visible;cursor:pointer;touch-action:pan-y}
+#hzRainDots circle{fill:#09151e;stroke:#77b7cf;stroke-width:1.4;vector-effect:non-scaling-stroke}
+#hangzhouMitigationSlider{display:block;width:calc(100% + 16px);margin:8px -8px 0;height:6px;accent-color:#9cd8ea;cursor:pointer}
+.hz-mitigation-years{display:flex;justify-content:space-between;margin-top:12px;font-size:10px;color:#6e91a3;font-variant-numeric:tabular-nums}
+.hz-mitigation-years .active{color:#dbf5ff}
+@media(max-width:760px){.hz-mitigation-page{min-height:720px}.hz-mitigation-page .hz-time-head h2{font-size:16px;letter-spacing:.03em}#hangzhouMitigationScene{inset:70px 0 270px}.hz-mitigation-controls{width:86%}.hz-mitigation-legends{gap:12px;font-size:10px;flex-wrap:wrap;margin-bottom:16px}.hz-mitigation-legends .severity{width:65px}.hz-mitigation-years{font-size:8px}.hz-mitigation-years span:nth-child(even):not(:last-child){visibility:hidden}.hz-mitigation-page .hz-demo-note{font-size:9px;line-height:1.5}.hz-mitigation-detail{font-size:11px;bottom:255px}.hz-mitigation-detail.selected{font-size:12px}}
+@media(max-width:760px){#hangzhouMitigationScene{bottom:345px}.hz-mitigation-detail{bottom:330px}.hz-mitigation-story{font-size:10px;min-height:32px;margin-bottom:10px}.hz-mitigation-projects{top:75px;padding:0 0 0 8px;width:90%;max-width:none;box-sizing:border-box}#hzMitigationProjectList{column-gap:12px}.hz-mitigation-projects button{font-size:10px;padding:3px 0}.hz-mitigation-projects button strong{display:block;margin-right:0}.hz-project-kicker{font-size:10px;margin-bottom:4px}.hz-mitigation-projects small{font-size:9px;margin-top:4px}}

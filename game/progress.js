@@ -1,0 +1,64 @@
+(()=>{
+ const pageKeys=['maps','sandbox','cities'],mapIds=['hangzhou-map-page','hangzhou-growth-page','hangzhou-mitigation-page'];
+ const cityTerminal={'上海':'地面保持畅通','广州':'外排完成','郑州':'达到承载临界','石家庄':'随后转晴蒸发'};
+ // CSS-hidden embedded pages otherwise keep their WebGL loops running.
+ // Keep their next frames queued and resume without a timestamp jump.
+ function manageFrameAnimation(frame){const win=frame.contentWindow;if(win.__resumeResearchFrames)return;const nativeRAF=win.requestAnimationFrame.bind(win),nativeCancel=win.cancelAnimationFrame.bind(win),pending=new Map();let id=0,scheduled=false,paused=null,offset=0;
+  const pump=()=>{if(scheduled||frame.hidden||!pending.size)return;scheduled=true;nativeRAF(time=>{scheduled=false;if(frame.hidden){paused??=time;return;}const batch=[...pending.values()];pending.clear();for(const cb of batch){try{cb(time-offset);}catch(error){win.console.error(error);}}pump();});};
+  win.requestAnimationFrame=cb=>{const key=--id;pending.set(key,cb);pump();return key;};win.cancelAnimationFrame=key=>{if(key<0)pending.delete(key);else nativeCancel(key);};
+  win.__researchAnimationNow=()=>win.performance.now()-offset;win.__suspendResearchFrames=()=>{paused??=win.performance.now();};win.__resumeResearchFrames=()=>{if(paused!==null){offset+=win.performance.now()-paused;paused=null;}pump();};
+ }
+ class ResearchProgress{
+  constructor(config,onChange){this.config=config;this.onChange=onChange;this.maps=new Set();this.cities=new Set();this.stormComplete=false;this.frames=new Map();this.active=null;this.cleanups=new Map();this.timer=null;this.storm={started:false,flood:false};this.phases=new Map();this.error=null;this.loading=new TerminalLoading(document.getElementById('businessModal'));}
+  emit(){this.syncCityColors();this.onChange?.();}
+  syncCityColors(){const doc=this.frames.get(2)?.contentDocument;if(!doc)return;const codes={'上海':'310000','广州':'440000','郑州':'410000','石家庄':'130000'};for(const [city,code]of Object.entries(codes)){const button=doc.querySelector('.city-hotspot[data-city="'+code+'"]');if(!button)continue;const done=this.cities.has(city);if(button.dataset.researchComplete===String(done))continue;button.classList.toggle('research-complete',done);button.dataset.researchComplete=String(done);button.setAttribute('aria-label',city+(done?' · 已完成调研':' · 尚未完成调研'));}}
+  complete(hall){return hall===0?this.maps.size===3:hall===1?this.stormComplete:this.cities.size===4;}
+  summary(hall){return hall===0?`地图线索 ${this.maps.size}/3`:hall===1?`暴雨完整演示 ${this.stormComplete?1:0}/1`:`城市方案 ${this.cities.size}/4`;}
+  open(hall){const key=pageKeys[hall],path=this.config.pages[key];this.active=hall;this.error=null;this.loading.begin();document.getElementById('frameError').hidden=true;for(const [i,f] of this.frames)f.hidden=i!==hall;
+   if(!path){this.fail(`缺少第${hall+1}个业务网页路径：请在 game/config.js 配置 ${key}。不会自动完成任务。`);return;}
+   const url=new URL(path,location.href);if(hall!==1)url.searchParams.set('researchHall',key);if(!['http:','https:','file:'].includes(url.protocol)){this.fail('不支持的业务网页路径。');return;}
+   let frame=this.frames.get(hall);if(!frame){frame=document.createElement('iframe');frame.title=['杭州地图调查','杭州降雨模拟','四城治理方案'][hall];frame.allow='fullscreen';frame.dataset.hall=hall;frame.src='about:blank';frame.addEventListener('load',()=>this.loaded(hall,frame,url));frame.addEventListener('error',()=>this.fail('网页加载失败，请检查路径后重试。'));frame.dataset.entryURL=url.href;this.frames.set(hall,frame);document.getElementById('frames').append(frame);const timeout=setTimeout(()=>{if(!this.cleanups.has(hall)&&this.active===hall)this.fail('网页尚未成功载入，请重试；没有发放钥匙。');},20000);this.cleanups.set('load-'+hall,()=>clearTimeout(timeout));}
+   if(frame.dataset.entryURL){const entry=frame.dataset.entryURL;delete frame.dataset.entryURL;this.loading.painted().then(()=>{if(this.frames.get(hall)===frame)frame.src=entry;});}frame.hidden=false;frame.inert=false;frame.contentWindow?.__resumeResearchFrames?.();frame.style.visibility='hidden';frame.style.opacity='0';frame.style.transition='opacity .25s';if(this.cleanups.has(hall))this.positionEntry(hall,frame);clearInterval(this.timer);this.timer=setInterval(()=>this.inspect(),180);this.inspect();
+  }
+  loaded(hall,frame,url){if(frame.contentWindow.location.href==='about:blank')return;this.cleanups.get('load-'+hall)?.();this.cleanups.delete('load-'+hall);this.cleanups.get(hall)?.();this.cleanups.delete(hall);
+   if(url.origin!==location.origin||(url.protocol==='file:')){this.fail('业务网页不是可观察的同源网页。缺少已验证的完成通信接口；任务保持锁定。');return;}
+   let doc;try{doc=frame.contentDocument;if(!doc?.documentElement)throw Error('无法访问网页');}catch{this.fail('不能读取跨域网页进度。需要提供完成接口，经确认后才能接入。');return;}
+   const expected=hall===0?'hzAtlasStage':hall===1?'weather':'regionCanvas';if(!doc.getElementById(expected)){this.fail('载入的页面不包含预期业务功能，请检查配置路径。');return;}manageFrameAnimation(frame);let gameNavStyle=null;if(hall===2){gameNavStyle=doc.createElement('style');gameNavStyle.textContent='#sceneReturn{display:none!important}.city-hotspot.research-complete{color:#72e8a3}.city-hotspot.research-complete .hotspot-core{background:#72e8a3;box-shadow:0 0 12px 3px #39c97b88}.city-hotspot.research-complete:before,.city-hotspot.research-complete:after{border-color:#72e8a3}.city-hotspot.research-complete .hotspot-label{color:#72e8a3;border-color:#44b47b}.city-hotspot.research-complete .hotspot-label:after{content:" ✓";color:#72e8a3}';doc.head.append(gameNavStyle);this.syncCityColors();}
+   // Game-only exit adaptation requested by the user; standalone business files stay unchanged.
+   if(!doc.getElementById('researchPixelCursor')){const cursor=doc.createElement('link');cursor.id='researchPixelCursor';cursor.rel='stylesheet';cursor.href=new URL('./cursor.css?v=mirrored-plane-v30',location.href).href;doc.head.append(cursor);}
+   let exitLink=null,exitHandler=null,exitMarkup=null;if(hall===1){exitLink=doc.querySelector('a.journey-link');if(exitLink){exitMarkup=exitLink.innerHTML;exitLink.querySelectorAll('span').forEach(s=>s.textContent='返回上一页');exitHandler=e=>{e.preventDefault();e.stopImmediatePropagation();document.getElementById('modalClose').click();};exitLink.addEventListener('click',exitHandler,true);}}
+   const cityFrame=event=>{if(hall!==2||this.active!==2)return;const d=event.detail;if(!d?.playing||!(d.name in cityTerminal)||![d.from,d.to,d.duration].every(Number.isFinite)||d.from<0||d.to<0||d.from>d.duration||d.to>d.duration)return;const thresholds=d.name==='广州'?[0,3.5,6.5,12.3,14,18.3,19.3]:d.name==='郑州'?[0,3,6.5,9.5,14]:[0,3.4,4.75,5,11.2];let seen=this.phases.get(d.name);if(!seen){seen=new Set();this.phases.set(d.name,seen);}const ranges=d.from<=d.to?[[d.from,d.to]]:[[d.from,d.duration],[0,d.to]];thresholds.forEach((t,i)=>{if(ranges.some(([a,b])=>a<=t&&b>=t))seen.add(i);});this.inspect();};frame.contentWindow.addEventListener('rain-city-frame',cityFrame);
+const observe=e=>{
+    if(this.active!==hall||!e.isTrusted)return;
+    if(e.type==='click'&&e.target.closest?.('button,a,input,select,canvas,[role="button"]'))this.onInteraction?.('interact');
+    else if(e.type==='input'&&e.target.matches?.('input[type="range"],select'))this.onInteraction?.('adjust');
+    if(hall===0){const section=e.target.closest?.('.hz-map-dialog .is-open');const index=mapIds.indexOf(section?.id);if(index<0)return;
+     const host=section.querySelector('[id$="Scene"]');if(host?.dataset.ready!=='true')return;
+     // Only a real input/change or a real click on a rendered map/its controls;
+     // opening/closing the modal, navigation and elapsed time are not clues.
+     if(e.type==='input'||e.type==='change'||e.target.tagName==='CANVAS'||e.target.closest('.hz-time-controls,.hz-growth-detail')){if(!this.maps.has(index)){this.maps.add(index);this.emit();}}
+    }
+   };
+   ['input','change','click'].forEach(type=>doc.addEventListener(type,observe,true));const limitScroll=()=>{if(this.active!==hall||hall===1)return;const win=frame.contentWindow,target=doc.getElementById(hall===0?'hangzhou-atlas':'regional-flow');if(!target)return;const top=target.getBoundingClientRect().top+win.scrollY,bottom=hall===0?top:Math.max(top,top+target.offsetHeight-win.innerHeight),y=Math.min(bottom,Math.max(top,win.scrollY));if(Math.abs(y-win.scrollY)>.5)win.scrollTo({top:y,behavior:'instant'});};const stopRootWheel=e=>{if(this.active!==0||hall!==0)return;let node=e.target;while(node&&node!==doc.body){const style=frame.contentWindow.getComputedStyle(node);if(node.closest?.('.hz-map-dialog')&&/(auto|scroll)/.test(style.overflowY)&&node.scrollHeight>node.clientHeight&&((e.deltaY>0&&node.scrollTop+node.clientHeight<node.scrollHeight-1)||(e.deltaY<0&&node.scrollTop>0)))return;node=node.parentElement;}e.preventDefault();};doc.addEventListener('wheel',stopRootWheel,{passive:false});frame.contentWindow.addEventListener('scroll',limitScroll,{passive:true});this.cleanups.set(hall,()=>{['input','change','click'].forEach(type=>doc.removeEventListener(type,observe,true));frame.contentWindow.removeEventListener('scroll',limitScroll);frame.contentWindow.removeEventListener('rain-city-frame',cityFrame);doc.removeEventListener('wheel',stopRootWheel);gameNavStyle?.remove();if(exitLink){exitLink.removeEventListener('click',exitHandler,true);exitLink.innerHTML=exitMarkup;}});
+   if(this.active===hall){document.getElementById('frameError').hidden=true;this.positionEntry(hall,frame);}this.inspect();
+  }
+  positionEntry(hall,frame){if(hall===1){frame.style.visibility='visible';frame.style.opacity='1';this.loading.end();return;}const id=hall===2?'regional-flow':'hangzhou-atlas';requestAnimationFrame(()=>requestAnimationFrame(()=>{if(this.active!==hall||frame.hidden)return;try{const win=frame.contentWindow,target=frame.contentDocument?.getElementById(id);if(target)win.scrollTo({top:target.getBoundingClientRect().top+win.scrollY,behavior:'instant'});requestAnimationFrame(()=>{if(this.active===hall&&!frame.hidden){frame.style.visibility='visible';frame.style.opacity='1';this.loading.end();}});}catch{this.fail('无法定位业务入口，请检查同源网页路径。');}}));}
+  inspect(){const hall=this.active,frame=this.frames.get(hall);if(hall===null||!frame)return;let doc;try{doc=frame.contentDocument;if(!doc)return;}catch{return;}
+   if(hall===1&&!this.stormComplete){const s=frame.contentWindow.sandbox;if(!s?.state||typeof s.hydrology?.stats!=='function'){if(doc.getElementById('loading')?.textContent.includes('三维场景未能启动'))this.fail('原沙盘三维场景启动失败，请重试或检查硬件加速。');return;}const state=s.state,stats=s.hydrology.stats();if(state.demoActive&&state.demoElapsed>0)this.storm.started=true;if(state.demoActive&&state.weather>=3.5&&stats.maxDepth>.035&&stats.area>0&&stats.volume>0)this.storm.flood=true;
+    if(this.storm.started&&this.storm.flood&&state.demoElapsed===30&&!state.demoActive&&doc.getElementById('demo-status')?.textContent==='30 秒演示完成'){this.stormComplete=true;this.emit();}
+   }
+   const returnProxy=document.getElementById('cityReturnProxy');if(returnProxy)returnProxy.hidden=hall!==2||doc.getElementById('cityScene')?.getAttribute('aria-hidden')!=='false';if(hall===2){const panel=doc.getElementById('cityScene');if(!panel?.classList.contains('revealed')||panel.getAttribute('aria-hidden')!=='false')return;
+    const name=doc.getElementById('sceneCity')?.textContent,stage=Number(doc.getElementById('szStage')?.dataset.stage),caption=doc.getElementById('cityAnimationCaptionText')?.textContent||'',playing=doc.getElementById('szPlay')?.textContent.includes('暂停');if(!(name in cityTerminal)||!Number.isInteger(stage)||!playing)return;
+    let seen=this.phases.get(name);if(!seen){seen=new Set();this.phases.set(name,seen);}seen.add(stage);
+    // Native animation phase progression + terminal caption, not a stopwatch.
+    const terminalStage=name==='广州'?6:4;if(seen.has(0)&&seen.has(1)&&seen.has(2)&&seen.has(3)&&stage===terminalStage&&caption.includes(cityTerminal[name])&&!this.cities.has(name)){this.cities.add(name);this.emit();}
+   }
+   if(hall===2)this.syncCityColors();const info=document.getElementById('modalProgress'),summary=this.summary(hall);if(info&&info.textContent!==summary)info.textContent=summary;
+  }
+  fail(message){this.loading.cancel();this.error=message;document.getElementById('frameErrorText').textContent=message;document.getElementById('frameError').hidden=false;}
+  close(){this.loading.cancel();this.active=null;clearInterval(this.timer);this.timer=null;for(const f of this.frames.values()){f.hidden=true;f.inert=true;f.contentWindow?.__suspendResearchFrames?.();}}
+  retry(){const hall=this.active;if(hall===null)return;this.cleanups.get(hall)?.();this.cleanups.delete(hall);this.frames.get(hall)?.remove();this.frames.delete(hall);this.open(hall);}
+  dispose(){this.close();this.cleanups.forEach(fn=>fn());this.cleanups.clear();this.frames.forEach(f=>f.remove());this.frames.clear();}
+ }
+ window.ResearchProgress=ResearchProgress;
+})();
